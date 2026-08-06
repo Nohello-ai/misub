@@ -6,14 +6,6 @@ const loading = ref(true);
 const me = ref(null);
 const usage = ref(null);
 
-const PLANS = [
-  { quotaGB: -1, name: '未开通' },
-  { quotaGB: 220, name: '轻享月包' },
-  { quotaGB: 300, name: '畅玩月包' },
-  { quotaGB: 500, name: '极速月包' },
-  { quotaGB: 0, name: '旗舰无限包' },
-];
-
 function formatBytes(bytes) {
   const n = Number(bytes || 0);
   if (n === 0) return '0 B';
@@ -23,20 +15,17 @@ function formatBytes(bytes) {
   return `${v.toFixed(v >= 100 ? 0 : 1)} ${units[i]}`;
 }
 
-function formatGB(gb) {
-  return `${gb} GB`;
-}
-
+// 套餐名按配额区间划分;tag 显示真实配额(非标称)
 const currentPlan = computed(() => {
   const quota = Number(usage.value?.quota ?? 0);
-  if (quota === -1) return PLANS[0];
-  if (quota === 0) return PLANS[4];
+  if (quota === -1) return { name: '未开通', tag: '无流量' };
+  if (quota === 0) return { name: '旗舰无限包', tag: '无限流量' };
   const quotaGB = quota / 1024 / 1024 / 1024;
-  let best = PLANS[1];
-  for (const plan of PLANS.slice(1, 4)) {
-    if (quotaGB >= plan.quotaGB * 0.95) best = plan;
-  }
-  return best;
+  const realGB = Math.round(quotaGB);
+  if (quotaGB < 220) return { name: '轻享月包', tag: `${realGB} GB` };
+  if (quotaGB < 300) return { name: '畅玩月包', tag: `${realGB} GB` };
+  if (quotaGB < 500) return { name: '极速月包', tag: `${realGB} GB` };
+  return { name: '旗舰月包', tag: `${realGB} GB` };
 });
 
 const usedBytes = computed(() => Number(usage.value?.total || 0));
@@ -86,7 +75,7 @@ onMounted(load);
           </span>
           <span v-else-if="quotaBytes > 0"
             class="px-2.5 py-0.5 text-xs misub-radius-pill bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-300 font-medium">
-            {{ formatGB(currentPlan.quotaGB) }}
+            {{ currentPlan.tag }}
           </span>
           <span v-else
             class="px-2.5 py-0.5 text-xs misub-radius-pill bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300 font-medium">
