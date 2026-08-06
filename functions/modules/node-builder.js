@@ -333,7 +333,7 @@ async function resolveIPReplacements(optIP, request, nodeCount = 16, operatorOve
  * @param {object} opts.user - 用户数据 { userID, trojanSecret }
  * @returns {Promise<string[]>} vless:// 节点 URI 数组
  */
-export async function buildNodes({ env, request, user }) {
+export async function buildNodes({ env, request, user, operatorOverride = null }) {
   const config = await loadNodeConfig(env);
   const hosts = Array.isArray(config.HOSTS) && config.HOSTS.length ? config.HOSTS : ['edgetunnel'];
   const nodeParams = config.节点参数 || {};
@@ -341,14 +341,15 @@ export async function buildNodes({ env, request, user }) {
   const transports = Array.isArray(config.transports) && config.transports.length ? config.transports : ['websocket'];
   const nodeCount = nodeParams.节点数量 || 16;
   const optIP = nodeParams.优选IP;
-  // 固定运营商(单账号内部订阅源无法实时识别用户运营商,用配置值;auto 时回退识别)
+  // 固定运营商(节点设置配置;auto 时回退)
   const fixedOperator = optIP?.运营商 && optIP.运营商 !== 'auto' ? optIP.运营商 : null;
-  const effectiveOperator = fixedOperator || identifyOperator(request?.cf);
+  // 用户实时运营商(订阅源机制透传 x-misub-cf)优先,其次固定配置,最后识别
+  const effectiveOperator = operatorOverride || fixedOperator || identifyOperator(request?.cf);
 
   // 生成优选 IP 替换(如果配置了优选 IP)
   let replacements = null;
   if (optIP?.模式) {
-    replacements = await resolveIPReplacements(optIP, request, nodeCount, fixedOperator);
+    replacements = await resolveIPReplacements(optIP, request, nodeCount, effectiveOperator);
   }
 
   const nodes = [];

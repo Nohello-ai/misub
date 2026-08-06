@@ -5,7 +5,7 @@
 
 import { StorageFactory, DataMigrator } from '../storage-adapter.js';
 import { KV_KEY_SUBS, KV_KEY_SETTINGS } from './config.js';
-import { loadNodeConfig, saveNodeConfig, buildNodes } from './node-builder.js';
+import { loadNodeConfig, saveNodeConfig, buildNodes, identifyOperator } from './node-builder.js';
 import { createJsonResponse, createErrorResponse, getAuthDebugInfo, JSON_BODY_LIMITS, readJsonWithLimit } from './utils.js';
 import { authMiddleware, handleLogin, handleLogout, getAuthSessionDiagnostic, getLoginPasswordDiagnostic } from './auth-middleware.js';
 import { handleDataRequest, handleMisubsSave, handleSettingsGet, handleSettingsSave, handleSettingsReset, handlePublicProfilesRequest, handlePublicConfig, handleUpdatePassword } from './api-handler.js';
@@ -237,7 +237,13 @@ export async function handleApiRequest(request, env, context = null) {
         if (!secret || url.searchParams.get('secret') !== secret) return createJsonResponse({ error: 'Unauthorized' }, 401);
         const userID = url.searchParams.get('uuid') || String(env?.ADMIN_UUID || '').trim() || 'a5aea414-bd01-48f1-9c82-1553c57b4033';
         try {
-            const nodes = await buildNodes({ env, request, user: { userID } });
+            // 用户实时运营商(订阅源机制透传 x-misub-cf,自动识别电信/联通/移动)
+            let operatorOverride = null;
+            const cfHeader = request.headers.get('x-misub-cf');
+            if (cfHeader) {
+                try { operatorOverride = identifyOperator(JSON.parse(cfHeader)); } catch { /* header 解析失败回退 */ }
+            }
+            const nodes = await buildNodes({ env, request, user: { userID }, operatorOverride });
             return new Response(nodes.join('\n'), {
                 headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
             });
