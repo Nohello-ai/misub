@@ -103,8 +103,11 @@ export async function getCIDRList(operator = 'cf') {
     const res = await fetch(`${GITHUB_RAW}/${key}`);
     if (res.ok) {
       const text = await res.text();
+      // 只保留 CF 核心段(162.159.x/198.41.x/173.245.x/104.16.x/172.64.x/108.162.x)
+      // cmliu 段里混入的 8.35.x/8.39.x/188.164.x 等在多数网络不可达,过滤掉避免 timeout
+      const CORE_RE = /^(162\.159\.|198\.41\.|173\.245\.|104\.16\.|172\.64\.|108\.162\.)/;
       const cidrs = text.split('\n').map((l) => l.trim())
-        .filter((l) => l && !l.startsWith('#') && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/.test(l));
+        .filter((l) => l && !l.startsWith('#') && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/.test(l) && CORE_RE.test(l));
       if (cidrs.length) {
         cidrCache.set(key, { cidrs, timestamp: now });
         return cidrs;
