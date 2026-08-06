@@ -11,6 +11,7 @@ import { prependNodeName, addFlagEmoji, removeFlagEmoji, fixNodeUrlEncoding, san
 import { runOperatorChain } from '../utils/operator-runner.js';
 import { createTimeoutFetch } from '../modules/utils.js';
 import { assertPublicNetworkUrl } from '../modules/security-utils.js';
+import { identifyOperator } from '../modules/node-builder.js';
 
 /**
  * 订阅获取配置常量
@@ -445,6 +446,18 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
                     requestUrl = parsedUrl.toString();
                 } catch (e) {
                     requestUrl += (requestUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                }
+            }
+
+            // 透传用户运营商:内部节点源据此自动识别(电信/联通/移动)
+            const operator = identifyOperator(context?.request?.cf);
+            if (operator) {
+                try {
+                    const parsedUrl = new URL(requestUrl);
+                    parsedUrl.searchParams.set('operator', operator);
+                    requestUrl = parsedUrl.toString();
+                } catch (e) {
+                    requestUrl += (requestUrl.includes('?') ? '&' : '?') + 'operator=' + encodeURIComponent(operator);
                 }
             }
 

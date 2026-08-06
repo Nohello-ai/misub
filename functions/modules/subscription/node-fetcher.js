@@ -19,7 +19,7 @@ import {
  * @param {boolean} plusAsSpace - 是否将名称中的 + 视为空格
  * @returns {Promise<Object>} 节点获取结果
  */
-export async function fetchSubscriptionNodes(url, subscriptionName, userAgent, customUserAgent = null, debug = false, excludeRules = '', fetchProxy = null, skipCertVerify = false, plusAsSpace = false, enableNodeCache = false, userRequest = null) {
+export async function fetchSubscriptionNodes(url, subscriptionName, userAgent, customUserAgent = null, debug = false, excludeRules = '', fetchProxy = null, skipCertVerify = false, plusAsSpace = false, enableNodeCache = false, userRequest = null, operator = null) {
     // 自动检测调试 Token
     const shouldDebug = debug || (url && url.includes('b0b422857bb46aba65da8234c84f38c6'));
 
@@ -42,16 +42,24 @@ export async function fetchSubscriptionNodes(url, subscriptionName, userAgent, c
             }
         }
 
+        // 附加运营商查询参数(内部节点源据此自动识别电信/联通/移动)
+        if (operator) {
+            try {
+                const parsedUrl = new URL(requestUrl);
+                parsedUrl.searchParams.set('operator', operator);
+                requestUrl = parsedUrl.toString();
+            } catch (e) {
+                requestUrl += (requestUrl.includes('?') ? '&' : '?') + 'operator=' + encodeURIComponent(operator);
+            }
+        }
+
         if (fetchProxy && typeof fetchProxy === 'string' && fetchProxy.trim()) {
             requestUrl = buildFetchProxyUrl(fetchProxy, url, effectiveUserAgent);
         }
 
-        // 透传用户运营商:内部节点源据此自动识别(电信/联通/移动)
-        const userCfHeader = userRequest?.cf ? { 'x-misub-cf': JSON.stringify(userRequest.cf) } : {};
-
         // 使用统一的 Fetch 工具，复用重试逻辑
         const response = await fetchWithRetry(requestUrl, {
-            headers: { 'User-Agent': effectiveUserAgent, ...userCfHeader },
+            headers: { 'User-Agent': effectiveUserAgent },
             redirect: "follow",
             ...(skipCertVerify ? { cf: { insecureSkipVerify: true } } : {})
         });
