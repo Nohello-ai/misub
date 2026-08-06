@@ -7,6 +7,7 @@ const me = ref(null);
 const usage = ref(null);
 
 const PLANS = [
+  { quotaGB: -1, name: '未开通' },
   { quotaGB: 220, name: '轻享月包' },
   { quotaGB: 300, name: '畅玩月包' },
   { quotaGB: 500, name: '极速月包' },
@@ -27,18 +28,19 @@ function formatGB(gb) {
 }
 
 const currentPlan = computed(() => {
-  const quota = Number(usage.value?.quota || 0);
-  if (quota === 0) return PLANS[3];
+  const quota = Number(usage.value?.quota ?? 0);
+  if (quota === -1) return PLANS[0];
+  if (quota === 0) return PLANS[4];
   const quotaGB = quota / 1024 / 1024 / 1024;
-  let best = PLANS[0];
-  for (const plan of PLANS.slice(0, 3)) {
+  let best = PLANS[1];
+  for (const plan of PLANS.slice(1, 4)) {
     if (quotaGB >= plan.quotaGB * 0.95) best = plan;
   }
   return best;
 });
 
 const usedBytes = computed(() => Number(usage.value?.total || 0));
-const quotaBytes = computed(() => Number(usage.value?.quota || 0));
+const quotaBytes = computed(() => Number(usage.value?.quota ?? 0));
 const remainingBytes = computed(() => (quotaBytes.value > 0 ? Math.max(0, quotaBytes.value - usedBytes.value) : 0));
 const percent = computed(() => (quotaBytes.value > 0 ? Math.min(100, (usedBytes.value / quotaBytes.value) * 100) : 0));
 const uploadBytes = computed(() => Number(usage.value?.upload || 0));
@@ -78,7 +80,11 @@ onMounted(load);
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">当前套餐</p>
         <div class="flex items-center gap-3">
           <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ currentPlan.name }}</span>
-          <span v-if="quotaBytes > 0"
+          <span v-if="quotaBytes === -1"
+            class="px-2.5 py-0.5 text-xs misub-radius-pill bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 font-medium">
+            无流量
+          </span>
+          <span v-else-if="quotaBytes > 0"
             class="px-2.5 py-0.5 text-xs misub-radius-pill bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-300 font-medium">
             {{ formatGB(currentPlan.quotaGB) }}
           </span>
@@ -112,17 +118,21 @@ onMounted(load);
         <div class="flex items-center justify-between mb-3">
           <p class="text-sm text-gray-500 dark:text-gray-400">剩余流量</p>
           <p class="text-sm font-medium text-gray-900 dark:text-white">
-            {{ formatBytes(remainingBytes) }}
-            <span class="text-gray-400 dark:text-gray-500">/ {{ quotaBytes > 0 ? formatBytes(quotaBytes) : '无限' }}</span>
+            <template v-if="quotaBytes === -1"><span class="text-red-500">无流量</span></template>
+            <template v-else>
+              {{ formatBytes(remainingBytes) }}
+              <span class="text-gray-400 dark:text-gray-500">/ {{ quotaBytes > 0 ? formatBytes(quotaBytes) : '无限' }}</span>
+            </template>
           </p>
         </div>
         <div class="h-3 bg-gray-100 dark:bg-white/10 misub-radius-pill overflow-hidden">
           <div class="h-full misub-radius-pill bg-gradient-to-r from-primary-500 via-sky-400 to-emerald-400 transition-all duration-500"
-            :style="{ width: `${quotaBytes > 0 ? Math.max(1, percent) : 100}%` }"></div>
+            :style="{ width: `${quotaBytes === -1 ? 0 : (quotaBytes > 0 ? Math.max(1, percent) : 100)}%` }"></div>
         </div>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
           已用 {{ formatBytes(usedBytes) }}
           <span v-if="quotaBytes > 0">({{ percent.toFixed(1) }}%)</span>
+          <span v-if="quotaBytes === -1">(无流量,请联系管理员开通)</span>
         </p>
       </div>
     </div>

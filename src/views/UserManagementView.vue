@@ -46,17 +46,26 @@ async function loadUsers() {
   }
 }
 
+function formatQuota(q) {
+  const n = Number(q);
+  if (n === -1) return '无流量';
+  if (n === 0) return '无限';
+  return formatBytes(n);
+}
+
 function openCreate() {
   editing.value = null;
-  form.value = { username: '', password: '', quotaBytes: '', role: 'user', disabled: false };
+  form.value = { username: '', password: '', quotaBytes: -1, role: 'user', disabled: false };
   showModal.value = true;
 }
 
 function openEdit(user) {
   editing.value = user;
+  const q = Number(user.quotaBytes);
   form.value = {
     username: user.username, password: '',
-    quotaBytes: user.quotaBytes ?? '', role: user.role || 'user', disabled: Boolean(user.disabled),
+    quotaBytes: q === -1 ? -1 : (q > 0 ? Math.round(q / 1024 / 1024 / 1024) : 0),
+    role: user.role || 'user', disabled: Boolean(user.disabled),
   };
   showModal.value = true;
 }
@@ -68,7 +77,14 @@ async function saveUser() {
   }
   saving.value = true;
   try {
-    const payload = { ...form.value, quotaBytes: form.value.quotaBytes === '' ? 0 : Number(form.value.quotaBytes) };
+    // quotaBytes 语义:-1 无流量 / 0 无限 / >0 有限字节;表单填的是 GB
+    let quotaBytes;
+    if (form.value.quotaBytes === -1 || form.value.quotaBytes === 0) {
+      quotaBytes = form.value.quotaBytes;
+    } else {
+      quotaBytes = Math.round(Number(form.value.quotaBytes) * 1024 * 1024 * 1024);
+    }
+    const payload = { ...form.value, quotaBytes };
     if (editing.value) {
       if (!payload.password) delete payload.password;
       await api.patch(`/api/useradmin/users/${editing.value.userID}`, payload);
@@ -155,10 +171,11 @@ onMounted(loadUsers);
               class="px-2 py-0.5 text-xs misub-radius-pill bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">已禁用</span>
           </div>
           <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            用量 {{ formatBytes(user.usage?.total || 0) }} / 配额 {{ formatBytes(user.usage?.quota || user.quotaBytes) }}
-            <span v-if="user.usage?.quota > 0" class="ml-1">
+            用量 {{ formatBytes(user.usage?.total || 0) }} / 配额 {{ formatQuota(user.usage?.quota ?? user.quotaBytes) }}
+            <span v-if="Number(user.usage?.quota) > 0" class="ml-1">
               (剩余 {{ formatBytes(user.usage?.remaining) }})
             </span>
+            <span v-if="Number(user.usage?.quota) === -1" class="ml-1 text-red-500">(无流量)</span>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
@@ -191,8 +208,25 @@ onMounted(loadUsers);
               class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 misub-radius-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/40" />
           </div>
           <div>
-            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">配额 (GB, 0 = 无限)</label>
-            <input v-model="form.quotaBytes" type="number" min="0" step="1"
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">配额 (GB, -1 = 无流量 / 0 = 无限)</label>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <button type="button" @click="form.quotaBytes = -1"
+                class="px-2.5 py-1 text-xs misub-radius-pill border transition-all"
+                :class="form.quotaBytes === -1 ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50'">无流量</button>
+              <button type="button" @click="form.quotaBytes = 220"
+                class="px-2.5 py-1 text-xs misub-radius-pill border transition-all"
+                :class="form.quotaBytes === 220 ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50'">220G</button>
+              <button type="button" @click="form.quotaBytes = 300"
+                class="px-2.5 py-1 text-xs misub-radius-pill border transition-all"
+                :class="form.quotaBytes === 300 ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50'">300G</button>
+              <button type="button" @click="form.quotaBytes = 500"
+                class="px-2.5 py-1 text-xs misub-radius-pill border transition-all"
+                :class="form.quotaBytes === 500 ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50'">500G</button>
+              <button type="button" @click="form.quotaBytes = 0"
+                class="px-2.5 py-1 text-xs misub-radius-pill border transition-all"
+                :class="form.quotaBytes === 0 ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50'">无限</button>
+            </div>
+            <input v-model="form.quotaBytes" type="number" step="1"
               class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 misub-radius-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/40" />
           </div>
           <div>
