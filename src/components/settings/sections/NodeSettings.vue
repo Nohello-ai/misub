@@ -18,7 +18,7 @@ const form = ref({
     启用0RTT: false,
     TLS分片: '',
     节点数量: 16,
-    优选IP: { 模式: 'optimized', 运营商: 'auto', 随机端口: false, 自定义IP源: '', 优选网站URL: '' },
+    优选IP: { 模式: 'optimized', 随机端口: false, 自定义IP源: '', 优选网站URL: '' },
   },
   ECH: false,
   ECHConfig: { dns: 'https://odvr.nic.cz/doh', domain: 'cloudflare-ech.com' },
@@ -44,7 +44,6 @@ async function load() {
         节点数量: d.nodeParams?.节点数量 || 16,
         优选IP: {
           模式: d.nodeParams?.优选IP?.模式 || 'optimized',
-          运营商: d.nodeParams?.优选IP?.运营商 || 'auto',
           随机端口: Boolean(d.nodeParams?.优选IP?.随机端口),
           自定义IP源: d.nodeParams?.优选IP?.自定义IP源 || '',
           优选网站URL: d.nodeParams?.优选IP?.优选网站URL || '',
