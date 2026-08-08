@@ -53,6 +53,18 @@ export async function fetchSubscriptionNodes(url, subscriptionName, userAgent, c
             }
         }
 
+        // 附加客户端类型(内部节点源据此过滤 fragment/0RTT 等不兼容参数:Clash 等不支持)
+        const clientTarget = detectClientTarget(userAgent);
+        if (clientTarget) {
+            try {
+                const parsedUrl = new URL(requestUrl);
+                parsedUrl.searchParams.set('target', clientTarget);
+                requestUrl = parsedUrl.toString();
+            } catch (e) {
+                requestUrl += (requestUrl.includes('?') ? '&' : '?') + 'target=' + encodeURIComponent(clientTarget);
+            }
+        }
+
         if (fetchProxy && typeof fetchProxy === 'string' && fetchProxy.trim()) {
             requestUrl = buildFetchProxyUrl(fetchProxy, url, effectiveUserAgent);
         }
@@ -132,4 +144,17 @@ function applyExcludeRulesToNodes(nodes, ruleText) {
     }
 
     return resultNodes;
+}
+
+// 根据订阅请求的 User-Agent 判断客户端类型(用于内部节点源过滤不兼容参数)
+function detectClientTarget(ua = '') {
+  const u = String(ua || '').toLowerCase();
+  if (/clash|mihomo/.test(u)) return 'clash';
+  if (/sing[-_ ]?box/.test(u)) return 'singbox';
+  if (/surge/.test(u)) return 'surge';
+  if (/loon/.test(u)) return 'loon';
+  if (/quanx|quantumult/.test(u)) return 'quanx';
+  if (/shadowrocket/.test(u)) return 'shadowrocket';
+  if (/v2ray|xray/.test(u)) return 'v2ray';
+  return '';
 }

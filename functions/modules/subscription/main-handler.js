@@ -9,7 +9,8 @@ import { resolveRequestContext } from './request-context.js';
 import { resolveNodeListWithCache } from './cache-manager.js';
 import { ProcessorService } from '../../services/processor-service.js';
 import { logAccessSuccess, shouldSkipLogging as shouldSkipAccessLog } from './access-logger.js';
-import { isBrowserAgent, determineTargetFormat, isMetaCore, isHiddifyAgent } from './user-agent-utils.js'; // [Added] Import centralized util
+import { isBrowserAgent, determineTargetFormat, isMetaCore, isHiddifyAgent } from './user-agent-utils.js';
+import { identifyOperator } from '../node-builder.js'; // [Added] Import centralized util
 import { authMiddleware } from '../auth-middleware.js';
 import { transformBuiltinSubscription } from './transformer-factory.js';
 import { fetchTransformTemplate } from './transform-template-cache.js';
@@ -593,9 +594,13 @@ export async function handleMisubRequest(context) {
     }
 
     // === 缓存机制：快速响应客户端请求 ===
+    // [修复] cacheKey 加入运营商维度:不同运营商(电信/移动/联通)的优选 IP 段不同,
+    // 共享同一缓存会导致"换网络更新订阅仍返回首次的运营商节点"
+    let requestOperator = '';
+    try { requestOperator = identifyOperator(context?.request?.cf) || ''; } catch { requestOperator = ''; }
     const cacheKey = generateCacheKey(
         profileIdentifier ? 'profile' : 'token',
-        profileIdentifier || token
+        `${profileIdentifier || token}:${requestOperator}`
     );
 
     // 检查是否强制刷新（通过 URL 参数）

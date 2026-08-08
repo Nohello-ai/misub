@@ -22,7 +22,7 @@ const form = ref({
   },
   ECH: false,
   ECHConfig: { dns: 'https://odvr.nic.cz/doh', domain: 'cloudflare-ech.com' },
-  反代: { 模式: '', PROXYIP: '', SOCKS5: { 账号: '' } },
+  反代: { 模式: 'proxyip', PROXYIP: '', SOCKS5: { 账号: '' } },
 });
 
 const hostsText = ref('');
@@ -55,7 +55,7 @@ async function load() {
         domain: d.ECHConfig?.domain || d.ECHConfig?.sni || 'cloudflare-ech.com',
       },
       反代: {
-        模式: d.反代?.模式 || '',
+        模式: d.反代?.模式 || 'proxyip',
         PROXYIP: d.反代?.PROXYIP || '',
         SOCKS5: { 账号: d.反代?.SOCKS5?.账号 || '' },
       },
@@ -164,13 +164,6 @@ onMounted(load);
           </div>
           <input v-model="form.nodeParams.启用0RTT" type="checkbox" class="h-4 w-4 accent-primary-600" />
         </label>
-        <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 misub-radius-lg cursor-pointer">
-          <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">随机端口</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">端口从 CF 端口池(443/2053/2083...)随机</p>
-          </div>
-          <input v-model="form.nodeParams.优选IP.随机端口" type="checkbox" class="h-4 w-4 accent-primary-600" />
-        </label>
       </div>
     </div>
 
@@ -202,23 +195,17 @@ onMounted(load);
     <!-- 反代模式 -->
     <div class="bg-white/80 dark:bg-gray-900/60 border border-gray-100/80 dark:border-white/10 misub-radius-lg p-5">
       <h3 class="font-semibold text-gray-900 dark:text-white mb-4">反代模式</h3>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">传输层连接策略:代理 IP / SOCKS5 转发(可选,一般保持关闭)</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">ProxyIP 使用内置反代池(无需填 IP);Auto 先直连失败自动走反代;默认 ProxyIP</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">模式</label>
           <select v-model="form.反代.模式"
             class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 misub-radius-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/40">
-            <option value="">关闭</option>
-            <option value="proxyip">ProxyIP</option>
+            <option value="proxyip">ProxyIP(内置反代池)</option>
+            <option value="auto">Auto(直连失败走反代)</option>
             <option value="socks5">SOCKS5</option>
-            <option value="auto">Auto(自动检测)</option>
+            <option value="">关闭</option>
           </select>
-        </div>
-        <div v-if="form.反代.模式 === 'proxyip' || form.反代.模式 === 'auto'">
-          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">ProxyIP(IP:端口 或 auto)</label>
-          <input v-model="form.反代.PROXYIP" type="text"
-            class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 misub-radius-lg text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/40"
-            placeholder="auto" />
         </div>
         <div v-if="form.反代.模式 === 'socks5'">
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">SOCKS5 账号(可选)</label>

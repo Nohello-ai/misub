@@ -19,6 +19,7 @@ const showTypeModal = ref(false);
 const types = [
   { id: 'clash', name: 'Clash', desc: 'Clash / Mihomo' },
   { id: 'singbox', name: 'Sing-Box', desc: '跨平台新一代' },
+  { id: 'v2ray', name: 'Base64 通用', desc: 'v2rayN / 通用客户端' },
   { id: 'surge', name: 'Surge', desc: 'macOS / iOS' },
   { id: 'loon', name: 'Loon', desc: 'iOS 专用' },
   { id: 'quanx', name: 'Quantumult X', desc: 'iOS 专用' },

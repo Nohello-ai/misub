@@ -86,6 +86,18 @@ function buildOutbound(proxy) {
         outbound.server = server;
         outbound.server_port = port;
         outbound.uuid = proxy.uuid || '';
+        // TLS(与 vmess 分支一致;缺了 TLS 会导致节点连 443 明文失败)
+        if (proxy.tls || proxy.sni || proxy.servername || proxy['skip-cert-verify'] || proxy['skip-cert-verify'] === true || proxy.skipCertVerify) {
+            outbound.tls = {
+                enabled: true,
+                server_name: proxy.sni || proxy.servername || server
+            };
+            if (proxy['skip-cert-verify'] === true || proxy.skipCertVerify === true) {
+                outbound.tls.insecure = true;
+            }
+            const fp = proxy['client-fingerprint'] || proxy.clientFingerprint || proxy.fp || 'chrome';
+            if (fp) outbound.tls.utls = { enabled: true, fingerprint: fp };
+        }
         if (proxy.network) {
             outbound.transport = { type: proxy.network };
             if (proxy.network === 'ws') {

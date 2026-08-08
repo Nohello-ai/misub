@@ -7,7 +7,7 @@ import { StorageFactory, DataMigrator } from '../storage-adapter.js';
 import { KV_KEY_SUBS, KV_KEY_SETTINGS } from './config.js';
 import { loadNodeConfig, saveNodeConfig, buildNodes, identifyOperator } from './node-builder.js';
 import { createJsonResponse, createErrorResponse, getAuthDebugInfo, JSON_BODY_LIMITS, readJsonWithLimit } from './utils.js';
-import { authMiddleware, handleLogin, handleLogout, getAuthSessionDiagnostic, getLoginPasswordDiagnostic } from './auth-middleware.js';
+import { authMiddleware, handleLogin, handleLogout, getAuthSessionDiagnostic } from './auth-middleware.js';
 import { handleDataRequest, handleMisubsSave, handleSettingsGet, handleSettingsSave, handleSettingsReset, handlePublicProfilesRequest, handlePublicConfig, handleUpdatePassword } from './api-handler.js';
 import { handleRuleTemplatesRequest } from './rule-template-handler.js';
 import { handleCronTrigger } from './notifications.js';
@@ -57,9 +57,6 @@ import { handleExternalApiRequest } from './external-api-router.js';
 // 常量定义
 const OLD_KV_KEY = 'misub_data_v1';
 const KV_KEY_PROFILES = 'misub_profiles_v1'; // Ensure this is defined if used
-function isAuthDiagnosticsEnabled(env) {
-    return String(env?.ENABLE_AUTH_DIAGNOSTICS || '').toLowerCase() === 'true';
-}
 
 /** 确保内置订阅源 + 默认 Profile 存在(我的订阅页首次加载时创建,输入默认全部指向内部节点源) */
 async function ensureInternalSubscription(env, origin) {
@@ -231,6 +228,7 @@ export async function handleApiRequest(request, env, context = null) {
         return await handleLogin(request, env);
     }
 
+
     // 内部节点源(订阅源机制拉取,secret 校验,不对外暴露;只返回节点文本,流量头由订阅出口处理)
     if (path === '/internal/node-source' && request.method === 'GET') {
         const secret = env?.NODE_SOURCE_SECRET || env?.MISUB_SECRET || '';
@@ -249,7 +247,19 @@ export async function handleApiRequest(request, env, context = null) {
                     try { operatorOverride = identifyOperator(JSON.parse(cfHeader)); } catch { /* 解析失败回退 */ }
                 }
             }
-            const nodes = await buildNodes({ env, request, user: { userID }, operatorOverride });
+            // 客户端类型(target):优先 query,兜底 UA 判断
+            let target = url.searchParams.get('target') || '';
+            if (!target) {
+                const ua = String(request.headers.get('user-agent') || '').toLowerCase();
+                if (/clash|mihomo/.test(ua)) target = 'clash';
+                else if (/sing[-_ ]?box/.test(ua)) target = 'singbox';
+                else if (/surge/.test(ua)) target = 'surge';
+                else if (/loon/.test(ua)) target = 'loon';
+                else if (/quanx|quantumult/.test(ua)) target = 'quanx';
+                else if (/shadowrocket/.test(ua)) target = 'shadowrocket';
+                else if (/v2ray|xray/.test(ua)) target = 'v2ray';
+            }
+            const nodes = await buildNodes({ env, request, user: { userID }, operatorOverride, target });
             return new Response(nodes.join('\n'), {
                 headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
             });
@@ -334,32 +344,7 @@ export async function handleApiRequest(request, env, context = null) {
         return await handleLogout(request);
     }
 
-    // 认证调试端点（默认关闭，不返回敏感值）
-    if (path === '/auth_debug') {
-        if (!isAuthDiagnosticsEnabled(env)) {
-            return createErrorResponse('Not Found', 404);
-        }
-        const debugInfo = await getAuthDebugInfo(env);
-        const authDiagnostic = await getAuthSessionDiagnostic(request, env);
 
-        return createJsonResponse({
-            success: true,
-            auth: authDiagnostic,
-            runtime: debugInfo
-        });
-    }
-
-    // 登录密码调试端点（默认关闭，不返回敏感值）
-    if (path === '/auth_check') {
-        if (!isAuthDiagnosticsEnabled(env)) {
-            return createErrorResponse('Not Found', 404);
-        }
-        if (request.method !== 'POST') {
-            return createJsonResponse({ error: 'Method Not Allowed' }, 405);
-        }
-        const diagnostic = await getLoginPasswordDiagnostic(request, env);
-        return createJsonResponse(diagnostic, diagnostic.success ? 200 : 400);
-    }
 
     if (!await authMiddleware(request, env)) {
         return createJsonResponse({ error: 'Unauthorized' }, 401);

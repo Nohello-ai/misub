@@ -103,11 +103,11 @@ export async function getCIDRList(operator = 'cf') {
     const res = await fetch(`${GITHUB_RAW}/${key}`);
     if (res.ok) {
       const text = await res.text();
-      // 只保留 CF 核心段(162.159.x/198.41.x/173.245.x/104.16.x/172.64.x/108.162.x)
-      // cmliu 段里混入的 8.35.x/8.39.x/188.164.x 等在多数网络不可达,过滤掉避免 timeout
-      const CORE_RE = /^(162\.159\.|198\.41\.|173\.245\.|104\.16\.|172\.64\.|108\.162\.)/;
+      // 与 v3 原版一致:使用 cmliu 运营商优选段的全部 CIDR(不过滤)
+      // 之前过滤掉 8.39.x 等段,但用户实测 8.39.125.66(v3 节点)是可用的,
+      // 过滤反而删掉了可用段,导致节点大部分不可达
       const cidrs = text.split('\n').map((l) => l.trim())
-        .filter((l) => l && !l.startsWith('#') && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/.test(l) && CORE_RE.test(l));
+        .filter((l) => l && !l.startsWith('#') && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/.test(l));
       if (cidrs.length) {
         cidrCache.set(key, { cidrs, timestamp: now });
         return cidrs;
@@ -292,7 +292,6 @@ function normalizeNodeParams(input = {}) {
 // ── 优选 IP 决策(从 v2 resolveIPReplacements 移植)─────
 async function resolveIPReplacements(optIP, request, nodeCount = 16, operatorOverride = null) {
   const operator = operatorOverride || identifyOperator(request?.cf);
-  const randomPort = Boolean(optIP?.随机端口);
 
   if (optIP?.模式 === 'custom') {
     let entries;
@@ -306,12 +305,12 @@ async function resolveIPReplacements(optIP, request, nodeCount = 16, operatorOve
     if (entries && entries.length) {
       return entries.map((entry, i) => ({
         address: entry.address,
-        port: entry.port ?? (randomPort ? CF_PORTS[Math.floor(Math.random() * CF_PORTS.length)] : 443),
+        port: entry.port ?? 443,
         name: `${operatorLabel(operator)}${i + 1}`,
       }));
     }
     const fallback = await getCIDRList('cf');
-    const ips = generateIPs(fallback, nodeCount, { ports: randomPort ? undefined : [443] });
+    const ips = generateIPs(fallback, nodeCount, { ports: [443] });
     return ips.map((ip, i) => {
       const [address, port] = ip.split(':');
       return { address, port: Number(port), name: `Ip获取失败${i + 1}` };
@@ -320,7 +319,7 @@ async function resolveIPReplacements(optIP, request, nodeCount = 16, operatorOve
 
   const cidrs = optIP?.模式 === 'optimized' ? await getCIDRList(operator) : await getCIDRList('cf');
   if (!cidrs || cidrs.length === 0) return [];
-  const ips = generateIPs(cidrs, nodeCount, { ports: randomPort ? undefined : [443] });
+  const ips = generateIPs(cidrs, nodeCount, { ports: [443] });
   return ips.map((ip, i) => {
     const [address, port] = ip.split(':');
     return { address, port: Number(port), name: `${operatorLabel(operator)}${i + 1}` };
@@ -336,7 +335,7 @@ async function resolveIPReplacements(optIP, request, nodeCount = 16, operatorOve
  * @param {object} opts.user - 用户数据 { userID, trojanSecret }
  * @returns {Promise<string[]>} vless:// 节点 URI 数组
  */
-export async function buildNodes({ env, request, user, operatorOverride = null }) {
+export async function buildNodes({ env, request, user, operatorOverride = null, target = '' }) {
   const config = await loadNodeConfig(env);
   const hosts = Array.isArray(config.HOSTS) && config.HOSTS.length ? config.HOSTS : ['edgetunnel'];
   const nodeParams = config.节点参数 || {};
@@ -359,6 +358,14 @@ export async function buildNodes({ env, request, user, operatorOverride = null }
   const echEnabled = Boolean(config.ECH);
   const echConfig = config.ECHConfig || {};
   const echDns = String(echConfig.dns || '').trim();
+
+  // 客户端兼容过滤:不支持 fragment/0RTT 的客户端,生成节点时去掉这些参数
+  // 支持 fragment/0RTT 的: sing-box / v2rayN / xray / shadowrocket 等
+  const targetName = String(target || '').toLowerCase();
+  const keepAdvanced = ['singbox', 'sing-box', 'sing_box', 'v2ray', 'v2rayn', 'xray', 'shadowrocket', 'egern'].includes(targetName);
+  // Clash 系等不支持 fragment 的客户端显式去掉
+  const stripFragment = ['clash', 'mihomo', 'surge', 'loon', 'quanx', 'quantumult'].includes(targetName);
+
   for (let i = 0; i < nodeCount; i++) {
     const host = hosts[Math.floor(Math.random() * hosts.length)];
     const transport = transports[Math.floor(Math.random() * transports.length)];
@@ -368,6 +375,18 @@ export async function buildNodes({ env, request, user, operatorOverride = null }
       ...nodeParams,
       path: `/${prefix}/${user.userID}/${protocol}`,
     });
+
+    // 客户端兼容过滤(Clash 等不支持 fragment/0RTT)
+    if (stripFragment || !keepAdvanced) {
+      params.query.delete('fragment');
+      if (params.path && params.path.includes('?')) {
+        const pi = params.path.indexOf('?');
+        const pq = new URLSearchParams(params.path.slice(pi + 1));
+        pq.delete('ed');
+        const rest = pq.toString();
+        params.path = rest ? `${params.path.slice(0, pi)}?${rest}` : params.path.slice(0, pi);
+      }
+    }
 
     let address = config.HOST || 'edgetunnel';
     let port = 443;
