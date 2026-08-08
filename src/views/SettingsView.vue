@@ -73,7 +73,18 @@ watch(() => route.path, (path) => {
 </script>
 
 <template>
-  <div class="pt-0 pb-6 min-h-[calc(100vh-80px)]">
+  <!-- 普通用户:锁定页(灰色 + 锁,无法绕过) -->
+  <div v-if="!isAdmin" class="pt-0 pb-6 min-h-[calc(100vh-80px)] flex items-center justify-center">
+    <div class="text-center max-w-sm mx-auto p-10 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 misub-radius-lg opacity-70 select-none">
+      <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+      <h2 class="text-lg font-bold text-gray-500 dark:text-gray-400">仅管理员可用</h2>
+      <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">该功能仅限管理员访问</p>
+    </div>
+  </div>
+
+  <div v-else class="pt-0 pb-6 min-h-[calc(100vh-80px)]">
     <div class="mb-4 bg-white/80 dark:bg-gray-900/60 border border-gray-100/80 dark:border-white/10 misub-radius-lg p-4">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('settings.title') }}</h1>
     </div>

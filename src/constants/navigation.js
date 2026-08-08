@@ -15,5 +15,5 @@ export const MAIN_NAV_ITEMS = [
   { key: 'nav.dashboard', name: '仪表盘', path: '/dashboard', iconPath: NAV_ICONS.dashboard },
   { key: 'nav.users', name: '用户管理', path: '/dashboard/users', iconPath: NAV_ICONS.users, adminOnly: true },
   { key: 'nav.subscriptions', name: '我的订阅', path: '/dashboard/subscriptions', iconPath: NAV_ICONS.subscriptions },
-  { key: 'nav.settings', name: '设置', path: '/dashboard/settings', iconPath: NAV_ICONS.settings }
+  { key: 'nav.settings', name: '设置', path: '/dashboard/settings', iconPath: NAV_ICONS.settings, adminOnly: true }
 ];
