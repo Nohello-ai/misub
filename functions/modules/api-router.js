@@ -228,6 +228,24 @@ export async function handleApiRequest(request, env, context = null) {
         return await handleLogin(request, env);
     }
 
+    // 公告列表(公开,供前端公告弹窗读取;最新在前)
+    if (path === '/announcements' && request.method === 'GET') {
+        const kv = env?.SHARED_KV || env?.MISUB_KV;
+        let announcements = [];
+        try {
+            const raw = kv ? await kv.get('announcements', 'text') : null;
+            if (raw) announcements = JSON.parse(raw);
+        } catch { announcements = []; }
+        if (!Array.isArray(announcements)) {
+            // 兼容旧格式:单条 announcement
+            try {
+                const single = kv ? await kv.get('announcement', 'text') : null;
+                announcements = single ? [{ date: '', content: single }] : [];
+            } catch { announcements = []; }
+        }
+        return createJsonResponse({ ok: true, announcements });
+    }
+
 
     // 内部节点源(订阅源机制拉取,secret 校验,不对外暴露;只返回节点文本,流量头由订阅出口处理)
     if (path === '/internal/node-source' && request.method === 'GET') {

@@ -18,7 +18,8 @@ export const messages = {
       main: '主导航',
       top: '顶部导航栏',
       bottom: '底部主导航',
-      locked: '仅管理员可用'
+      locked: '仅管理员可用',
+      announcement: '公告'
     },
     actions: {
       login: '登录',

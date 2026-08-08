@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUIStore } from '../../stores/ui.js';
 import { useSessionStore } from '../../stores/session.js';
@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia';
 import BaseIcon from '../ui/BaseIcon.vue';
 import BrandLogo from './BrandLogo.vue';
 import NavActionGroup from './NavActionGroup.vue';
+import AnnouncementModal from '../modals/AnnouncementModal.vue';
 import { MAIN_NAV_ITEMS } from '../../constants/navigation.js';
 import { useI18n } from '../../i18n/index.js';
 
@@ -23,6 +24,8 @@ defineProps({
 });
 
 const emit = defineEmits(['logout']);
+
+const showAnnouncement = ref(false);
 
 const navItems = MAIN_NAV_ITEMS;
 
@@ -52,6 +55,7 @@ function isLocked(item) {
       :with-focus-ring="true"
       rounded-class="rounded-full"
       @toggle-layout="uiStore.toggleLayout()"
+      @open-announcement="showAnnouncement = true"
       @logout="emit('logout')"
     />
   </header>
@@ -156,4 +160,6 @@ function isLocked(item) {
       </template>
     </div>
   </nav>
+
+  <AnnouncementModal v-model:show="showAnnouncement" />
 </template>

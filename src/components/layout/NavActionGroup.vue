@@ -42,7 +42,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['openSettings', 'toggleLayout', 'logout']);
+const emit = defineEmits(['openSettings', 'toggleLayout', 'logout', 'openAnnouncement']);
 const route = useRoute();
 const { t } = useI18n();
 const showPublicFeedback = computed(() => !props.isLoggedIn && (route.name === 'Home' || route.name === 'Explore'));
@@ -116,12 +116,12 @@ function buildBtnClass(type) {
       </button>
 
       <button
-        @click="emit('toggleLayout')"
+        @click="emit('openAnnouncement')"
         :class="buildBtnClass('neutral')"
-        :title="t('actions.toggleLayout')"
-        :aria-label="t('actions.toggleLayout')"
+        :title="t('nav.announcement')"
+        :aria-label="t('nav.announcement')"
       >
-        <BaseIcon :path="NAV_ICONS.layout" className="h-5 w-5" />
+        <BaseIcon :path="NAV_ICONS.announcement" className="h-5 w-5" />
       </button>
 
       <button
