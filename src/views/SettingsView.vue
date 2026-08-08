@@ -11,7 +11,6 @@ import { storeToRefs } from 'pinia';
 import SettingsSidebar from '../components/settings/SettingsSidebar.vue';
 import BasicSettings from '../components/settings/sections/BasicSettings.vue';
 import ServiceSettings from '../components/settings/sections/ServiceSettings.vue';
-import SubsSettings from '../components/settings/sections/SubsSettings.vue';
 import NodeSettings from '../components/settings/sections/NodeSettings.vue';
 
 // 使用 composable 获取所有设置相关的状态和函数
@@ -42,7 +41,6 @@ const route = useRoute();
 const currentTabLabel = computed(() => {
   switch (activeTab.value) {
     case 'basic': return t('settings.tabs.basic');
-    case 'subs': return t('settings.tabs.subs');
     case 'nodes': return t('settings.tabs.nodes');
     case 'service': return t('settings.tabs.service');
     default: return t('settings.title');
@@ -116,7 +114,6 @@ watch(() => route.path, (path) => {
           </div>
         </div>
         <BasicSettings v-show="activeTab === 'basic'" :settings="settings" :disguiseConfig="disguiseConfig" />
-        <SubsSettings v-show="activeTab === 'subs'" :settings="settings" />
         <NodeSettings v-show="activeTab === 'nodes' && isAdmin" :settings="settings" />
         <ServiceSettings v-show="activeTab === 'service'" :settings="settings" />
       </div>

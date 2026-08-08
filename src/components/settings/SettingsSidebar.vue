@@ -18,7 +18,6 @@ const emit = defineEmits(['update:activeTab']);
 
 const tabs = [
   { id: 'basic', labelKey: 'settings.tabs.basic' },
-  { id: 'subs', labelKey: 'settings.tabs.subs' },
   { id: 'nodes', labelKey: 'settings.tabs.nodes', adminOnly: true },
   { id: 'service', labelKey: 'settings.tabs.service' },
 ];
