@@ -34,23 +34,17 @@ watch(() => props.show, (v) => {
 </script>
 
 <template>
-  <Modal :show="show" @update:show="emit('update:show', $event)">
-    <div class="w-full max-w-lg">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white">📢 公告</h2>
-        <button
-          @click="emit('update:show', false)"
-          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none px-1"
-          aria-label="关闭"
-        >×</button>
-      </div>
-
+  <Modal :show="show" size="lg" @update:show="emit('update:show', $event)">
+    <template #title>
+      <span class="text-lg font-bold text-gray-900 dark:text-white">📢 公告</span>
+    </template>
+    <template #body>
       <div v-if="loading" class="text-center py-10 text-gray-500">加载中...</div>
       <div v-else-if="error" class="text-center py-10 text-red-500">{{ error }}</div>
       <div v-else-if="announcements.length === 0" class="text-center py-10 text-gray-400 dark:text-gray-500">
         暂无公告
       </div>
-      <div v-else class="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
+      <div v-else class="max-h-[55vh] overflow-y-auto space-y-3 pr-1">
         <!-- 最新在上,最旧在下 -->
         <div
           v-for="a in announcements"
@@ -61,6 +55,12 @@ watch(() => props.show, (v) => {
           <div class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{{ a.content }}</div>
         </div>
       </div>
-    </div>
+    </template>
+    <template #footer>
+      <button
+        @click="emit('update:show', false)"
+        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold text-sm misub-radius-lg transition-colors"
+      >关闭</button>
+    </template>
   </Modal>
 </template>
