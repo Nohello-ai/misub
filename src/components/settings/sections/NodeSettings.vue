@@ -22,7 +22,7 @@ const form = ref({
   },
   ECH: false,
   ECHConfig: { dns: 'https://odvr.nic.cz/doh', domain: 'cloudflare-ech.com' },
-  反代: { 模式: 'proxyip', PROXYIP: '', SOCKS5: { 账号: '' } },
+  反代: { 模式: 'proxyip', PROXYIP: '', SOCKS5: { 账号: '', 全局: false } },
 });
 
 const hostsText = ref('');
@@ -57,7 +57,7 @@ async function load() {
       反代: {
         模式: d.反代?.模式 || 'proxyip',
         PROXYIP: d.反代?.PROXYIP || '',
-        SOCKS5: { 账号: d.反代?.SOCKS5?.账号 || '' },
+        SOCKS5: { 账号: d.反代?.SOCKS5?.账号 || '', 全局: Boolean(d.反代?.SOCKS5?.全局) },
       },
     };
     hostsText.value = (d.HOSTS || []).join('\n');
@@ -195,24 +195,30 @@ onMounted(load);
     <!-- 反代模式 -->
     <div class="bg-white/80 dark:bg-gray-900/60 border border-gray-100/80 dark:border-white/10 misub-radius-lg p-5">
       <h3 class="font-semibold text-gray-900 dark:text-white mb-4">反代模式</h3>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">ProxyIP 使用内置反代池(无需填 IP);Auto 先直连失败自动走反代;默认 ProxyIP</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Proxy 只用于 CF 目标(普通网站直连);SOCKS5 可勾选全局(所有流量走);Auto 优先 SOCKS5,没有则用 Proxy</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">模式</label>
           <select v-model="form.反代.模式"
             class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 misub-radius-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/40">
-            <option value="proxyip">ProxyIP(内置反代池)</option>
-            <option value="auto">Auto(直连失败走反代)</option>
+            <option value="proxyip">Proxy(内置反代池,仅 CF 目标)</option>
             <option value="socks5">SOCKS5</option>
-            <option value="">关闭</option>
+            <option value="auto">Auto(有 SOCKS5 用 SOCKS5,否则 Proxy)</option>
           </select>
         </div>
-        <div v-if="form.反代.模式 === 'socks5'">
-          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">SOCKS5 账号(可选)</label>
+        <div v-if="form.反代.模式 === 'socks5' || form.反代.模式 === 'auto'">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">SOCKS5 账号</label>
           <input v-model="form.反代.SOCKS5.账号" type="text"
             class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 misub-radius-lg text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/40"
             placeholder="账号:密码@主机:端口" />
         </div>
+        <label v-if="form.反代.模式 === 'socks5'" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 misub-radius-lg cursor-pointer">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">SOCKS5 全局</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">勾选:所有流量走 SOCKS5;不勾:仅 CF 目标走</p>
+          </div>
+          <input v-model="form.反代.SOCKS5.全局" type="checkbox" class="h-4 w-4 accent-primary-600" />
+        </label>
       </div>
     </div>
 
