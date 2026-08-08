@@ -7,6 +7,7 @@ export const messages = {
     },
     nav: {
       dashboard: '仪表盘',
+      users: '用户管理',
       groups: '机场订阅',
       nodes: '手动节点',
       subscriptions: '我的订阅',
@@ -1198,6 +1199,7 @@ export const messages = {
     },
     nav: {
       dashboard: 'Dashboard',
+      users: 'User Management',
       groups: 'Sources',
       nodes: 'Nodes',
       subscriptions: 'Subscriptions',
