@@ -113,6 +113,7 @@ function isLocked(item) {
           :show-divider="true"
           rounded-class="rounded-full"
           @toggle-layout="uiStore.toggleLayout()"
+          @open-announcement="showAnnouncement = true"
           @logout="emit('logout')"
         />
       </div>
