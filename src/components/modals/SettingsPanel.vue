@@ -8,7 +8,6 @@ import SettingsLayout from '../layout/SettingsLayout.vue';
 import SettingsSidebar from '../settings/SettingsSidebar.vue';
 import BasicSettings from '../settings/sections/BasicSettings.vue';
 import HomeSettings from '../settings/sections/HomeSettings.vue';
-import ServiceSettings from '../settings/sections/ServiceSettings.vue';
 import GlobalSettings from '../settings/sections/GlobalSettings.vue';
 
 
@@ -39,7 +38,6 @@ const currentTabLabel = computed(() => {
     case 'basic': return '基础设置';
     case 'home': return '首页设置';
     case 'global': return '全局设置';
-    case 'service': return '服务集成';
     case 'client': return '客户端管理';
     case 'system': return '系统设置';
     default: return '设置';
@@ -82,7 +80,6 @@ defineExpose({ handleSave: handleSaveAndReturnStatus });
         <BasicSettings v-show="activeTab === 'basic'" :settings="settings" :disguiseConfig="disguiseConfig" />
         <HomeSettings v-show="activeTab === 'home'" :settings="settings" />
         <GlobalSettings v-show="activeTab === 'global'" :settings="settings" />
-        <ServiceSettings v-show="activeTab === 'service'" :settings="settings" />
         <ClientSettings v-show="activeTab === 'client'" />
         <div v-show="activeTab === 'system'" class="space-y-6">
           <WebdavBackupSettings :settings="settings" />

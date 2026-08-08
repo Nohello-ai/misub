@@ -19,7 +19,6 @@ const emit = defineEmits(['update:activeTab']);
 const tabs = [
   { id: 'basic', labelKey: 'settings.tabs.basic' },
   { id: 'nodes', labelKey: 'settings.tabs.nodes', adminOnly: true },
-  { id: 'service', labelKey: 'settings.tabs.service' },
 ];
 
 function isLocked(tab) {
@@ -54,8 +53,7 @@ function isLocked(tab) {
           <path v-if="tab.id === 'global'" stroke-linecap="round" stroke-linejoin="round"
             d="M12 3c-4.418 0-8 3.134-8 7s3.582 7 8 7 8-3.134 8-7-3.582-7-8-7zm0 10.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7zm0 5.5v2m-4-3l-1.5 1.5m9-1.5L16 19.5m-9-9H3m18 0h-4" />
 
-          <path v-if="tab.id === 'service'" stroke-linecap="round" stroke-linejoin="round"
-            d="M13 10V3L4 14h7v7l9-11h-7z" />
+
 
           <path v-if="tab.id === 'client'" stroke-linecap="round" stroke-linejoin="round"
             d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />

@@ -305,11 +305,6 @@ export async function handleApiRequest(request, env, context = null) {
         return createErrorResponse('Method Not Allowed', 405);
     }
 
-    // Telegram Push Bot Webhook (公开接口，内部验证)
-    if (path === '/telegram/webhook') {
-        const { handleTelegramWebhook } = await import('./handlers/telegram-webhook-handler.js');
-        return await handleTelegramWebhook(request, env);
-    }
 
     // Error report endpoint (public)
     if (path === '/system/error_report') {
